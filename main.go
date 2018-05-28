@@ -24,36 +24,42 @@ type User struct {
 	Science    bool
 }
 
-
 var url = "https://id.en-courage.com/admin/users/search?univ_name_or_graduate_name_cont%5D=%E5%90%8C%E5%BF%97%E7%A4%BE&q%5Buser_educational_last_educational_year_eq%5D=2020"
 
+var url = "https://id.en-courage.com/admin/users/search?"
+
 func main() {
+	//query
+	values := url.Values{}
+	values.Add
+	//page数
 	page := getLastPage()
-	for i:=1 ;i<=page ;i++{
+	//スクレイピング
+	for i := 1; i <= page; i++ {
 		resp := Get(url)
-	defer resp.Body.Close()
-	}
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		panic(err)
+		doc, err := goquery.NewDocumentFromReader(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			panic(err)
+		}
+		users := []User{}
+		doc.Find("tr").Each(func(i int, s *goquery.Selection) {
+			if i != 0 {
+				user := User{}
+				user.getUserStatus(s)
+				user.getUserDetail()
+				users = append(users, user)
+			}
+		})
+		fmt.Printf("%+v \n", users)
 	}
 
-	users := []User{}
-	doc.Find("tr").Each(func(i int, s *goquery.Selection) {
-		if i != 0 {
-			user := User{}
-			user.getUserStatus(s)
-			user.getUserDetail()
-			users = append(users, user)
-		}
-	})
-	fmt.Printf("%+v \n", users)
 }
 
-func connectKey(m map[string][string])string{
+func connectKey(m map[string]string) string {
 	key := ""
-	for k,v := range m {
-		str= "&" + k + "=" + v
+	for k, v := range m {
+		str := "&" + k + "=" + v
 		key += str
 	}
 	return key

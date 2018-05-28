@@ -1,0 +1,24 @@
+Url="https://id.en-courage.com/admin/users/search"
+Auth="authenticity_token=xzvB/2M/LRSgrBVMg3GPe9UlD17ke9J0CXrySO/7c7o/aKvppZA6RQSg0XuJvZv3yZoyF4OTQins6X2kfq0PDg=="
+  [[Qs]]
+    Key="q[last_name_or_first_name_or_last_name_kana_or_first_name_kana_cont]"
+    Val=""
+  [[Qs]]
+    Key="&q[user_educational_last_educational_year_eq]"
+    Val="2020"
+  [[Qs]]
+    Key="q[univ_name_or_graduate_name_cont]"
+    Val="同志社"
+  [[Qs]]
+    Key="q[last_name_or_first_name_or_last_name_kana_or_first_name_kana_cont]"
+    Val=""
+  [[Qs]]
+    Key="q[last_name_or_first_name_or_last_name_kana_or_first_name_kana_cont]"
+    Val=""
+  [[Qs]]
+    Key="q[last_name_or_first_name_or_last_name_kana_or_first_name_kana_cont]"
+    Val=""
+
+
+
+
