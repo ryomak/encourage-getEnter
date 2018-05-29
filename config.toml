@@ -1,5 +1,7 @@
-Url="https://id.en-courage.com/admin/users/search"
+Url="https://id.en-courage.com/admin/users/search?"
 Auth="authenticity_token=xzvB/2M/LRSgrBVMg3GPe9UlD17ke9J0CXrySO/7c7o/aKvppZA6RQSg0XuJvZv3yZoyF4OTQins6X2kfq0PDg=="
+WriteType="detail"
+WriteFile="./enter.csv"
   [[Qs]]
     Key="q[last_name_or_first_name_or_last_name_kana_or_first_name_kana_cont]"
     Val=""

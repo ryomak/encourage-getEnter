@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -24,45 +25,113 @@ type User struct {
 	Science    bool
 }
 
-var url = "https://id.en-courage.com/admin/users/search?univ_name_or_graduate_name_cont%5D=%E5%90%8C%E5%BF%97%E7%A4%BE&q%5Buser_educational_last_educational_year_eq%5D=2020"
+var fetchUrl = ""
+var typeFunc func(int) interface{}
+var config Config
 
-var url = "https://id.en-courage.com/admin/users/search?"
-
-func main() {
+func init() {
+	config = GetConfig()
 	//query
 	values := url.Values{}
-	values.Add
-	//page数
-	page := getLastPage()
-	//スクレイピング
-	for i := 1; i <= page; i++ {
-		resp := Get(url)
-		doc, err := goquery.NewDocumentFromReader(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			panic(err)
-		}
-		users := []User{}
-		doc.Find("tr").Each(func(i int, s *goquery.Selection) {
-			if i != 0 {
-				user := User{}
-				user.getUserStatus(s)
-				user.getUserDetail()
-				users = append(users, user)
-			}
-		})
-		fmt.Printf("%+v \n", users)
+	for _, v := range config.Qs {
+		values.Add(v.Key, v.Val)
 	}
-
+	fetchUrl = config.Url + values.Encode()
+	//functype
+	switch config.WriteType {
+	case "light":
+		typeFunc = light
+	case "detail":
+		typeFunc = detail
+	}
 }
 
-func connectKey(m map[string]string) string {
-	key := ""
-	for k, v := range m {
-		str := "&" + k + "=" + v
-		key += str
+func main() {
+	config := GetConfig()
+	//page数
+	page := getLastPage()
+	fmt.Printf("url:%v\npage:%v\n", fetchUrl, page)
+	typeFunc(page)
+}
+
+//メソッド一覧
+func detail(page int) []User {
+	var users []User
+	//スクレイピング
+	for i := 1; i <= page; i++ {
+		users = append(users, fetchDetailBody(i)...)
 	}
-	return key
+	WriteCsv(config.WriteFile, users)
+	return users
+}
+
+func light(page int) []User {
+	var users []User
+	//スクレイピング
+	for i := 1; i <= page; i++ {
+		users = append(users, fetchBody(i)...)
+	}
+	WriteCsv(config.WriteFile, users)
+	return users
+}
+
+func printData(page int) err {
+	var users []User
+	//スクレイピング
+	for i := 1; i <= page; i++ {
+		users = append(users, fetchDetailBody(i)...)
+	}
+	scienceNum := 0
+	dojo := 0
+	for _, v = range users {
+		if v.Sciense == "理系" {
+			scienceNum++
+		}
+		if strings.Index(v.Univ, "女") != -1 {
+			dojo++
+		}
+	}
+	fmt.Printf("登録者数:%d人\n理系:%d人\n同女:%d人", len(users), scienceNum, dojo)
+}
+
+//便利関数
+func fetchBody(p int) []User {
+	p := strconv.Itoa(i)
+	resp := Get(fetchUrl + "&page=" + p)
+	users := []User{}
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	doc.Find("tr").Each(func(i int, s *goquery.Selection) {
+		if i != 0 {
+			user := User{}
+			user.getUserStatus(s)
+			users = append(users, user)
+		}
+	})
+	return users
+}
+
+func fetchDetailBody(p int) []User {
+	p := strconv.Itoa(i)
+	resp := Get(fetchUrl + "&page=" + p)
+	users := []User{}
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	doc.Find("tr").Each(func(i int, s *goquery.Selection) {
+		if i != 0 {
+			user := User{}
+			user.getUserStatus(s)
+			user.getUserDetail()
+			users = append(users, user)
+		}
+	})
+	return users
 }
 
 func (u *User) getUserDetail() {
@@ -82,7 +151,7 @@ func (u *User) getUserDetail() {
 			u.Gender = s.Text()
 		case 3:
 			u.Department = s.Text()
-			if strings.Index(s.Text(), "理") != -1 {
+			if strings.Index(s.Text(), "理工") != -1 {
 				u.Science = true
 			} else if strings.Index(s.Text(), "医") != -1 {
 				u.Science = true
@@ -95,7 +164,7 @@ func (u *User) getUserDetail() {
 }
 
 func getLastPage() int {
-	resp := Get(url)
+	resp := Get(fetchUrl + "&page=1")
 	defer resp.Body.Close()
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
