@@ -23,10 +23,11 @@ type User struct {
 	Url        string
 	Eval       string
 	Science    bool
+	Update     string
 }
 
 var fetchUrl = ""
-var typeFunc func(int) interface{}
+var typeFunc func(int) []User
 var config Config
 
 func init() {
@@ -43,11 +44,14 @@ func init() {
 		typeFunc = light
 	case "detail":
 		typeFunc = detail
+	case "printData":
+		typeFunc = printData
+	default:
+		fmt.Println("関数が存在しません")
 	}
 }
 
 func main() {
-	config := GetConfig()
 	//page数
 	page := getLastPage()
 	fmt.Printf("url:%v\npage:%v\n", fetchUrl, page)
@@ -75,7 +79,7 @@ func light(page int) []User {
 	return users
 }
 
-func printData(page int) err {
+func printData(page int) []User {
 	var users []User
 	//スクレイピング
 	for i := 1; i <= page; i++ {
@@ -83,8 +87,8 @@ func printData(page int) err {
 	}
 	scienceNum := 0
 	dojo := 0
-	for _, v = range users {
-		if v.Sciense == "理系" {
+	for _, v := range users {
+		if v.Science {
 			scienceNum++
 		}
 		if strings.Index(v.Univ, "女") != -1 {
@@ -92,10 +96,11 @@ func printData(page int) err {
 		}
 	}
 	fmt.Printf("登録者数:%d人\n理系:%d人\n同女:%d人", len(users), scienceNum, dojo)
+	return users
 }
 
 //便利関数
-func fetchBody(p int) []User {
+func fetchBody(i int) []User {
 	p := strconv.Itoa(i)
 	resp := Get(fetchUrl + "&page=" + p)
 	users := []User{}
@@ -114,7 +119,7 @@ func fetchBody(p int) []User {
 	return users
 }
 
-func fetchDetailBody(p int) []User {
+func fetchDetailBody(i int) []User {
 	p := strconv.Itoa(i)
 	resp := Get(fetchUrl + "&page=" + p)
 	users := []User{}
@@ -196,6 +201,8 @@ func (u *User) getUserStatus(s *goquery.Selection) {
 			u.Univ = se.Text()
 		case 8:
 			u.Intern = se.Text()
+		case 9:
+			u.Update = se.Text()
 		default:
 
 		}

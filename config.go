@@ -39,13 +39,13 @@ func WriteCsv(name string, users []User) {
 	}
 	defer file.Close()
 	writer := csv.NewWriter(file)
-	writer.Write([]string{"メンターID", "名前", "ふりがな", "担当メンター", "電話番号", "大学/学部", "インターン", "性別", "判定", "理系"})
+	writer.Write([]string{"メンターID", "名前", "ふりがな", "担当メンター", "電話番号", "大学/学部", "インターン", "性別", "判定", "理系", "Update"})
 	for _, v := range users {
 		r := "文系"
 		if v.Science {
 			r = "理系"
 		}
-		writer.Write([]string{v.ID, v.Name, v.Yomi, v.Mentor, v.Phone, v.Department, v.Intern, v.Gender, v.Eval, r})
+		writer.Write([]string{v.ID, v.Name, v.Yomi, v.Mentor, v.Phone, v.Department, v.Intern, v.Gender, v.Eval, r, v.Update})
 	}
 	writer.Flush()
 }
