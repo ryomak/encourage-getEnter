@@ -2,7 +2,7 @@ Url="https://id.en-courage.com/admin/users/search?"
 #Authは変えないで
 Auth="authenticity_token=xzvB/2M/LRSgrBVMg3GPe9UlD17ke9J0CXrySO/7c7o/aKvppZA6RQSg0XuJvZv3yZoyF4OTQins6X2kfq0PDg=="
 #WriteType...detail=詳細時間かかる，light=データ少ないが早い,printData=登録数，理系数のみだす
-WriteType="detail"
+WriteType="light"
 #出力ファイル
 WriteFile="./enter.csv"
 #Qs=クエリ，基本的に条件をカエル際に使用

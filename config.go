@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/csv"
 	"github.com/BurntSushi/toml"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 	"os"
 	"path/filepath"
 )
@@ -38,7 +40,7 @@ func WriteCsv(name string, users []User) {
 		panic(err)
 	}
 	defer file.Close()
-	writer := csv.NewWriter(file)
+	writer := csv.NewWriter(transform.NewWriter(file, japanese.ShiftJIS.NewEncoder()))
 	writer.Write([]string{"メンターID", "名前", "ふりがな", "担当メンター", "電話番号", "大学/学部", "インターン", "性別", "判定", "理系", "Update"})
 	for _, v := range users {
 		r := "文系"
