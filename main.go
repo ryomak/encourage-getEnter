@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/olekukonko/tablewriter"
 )
 
 type User struct {
@@ -24,10 +28,13 @@ type User struct {
 	Science    bool
 	Update     string
 }
+type us []User
 
+//global変数
 var fetchUrl = ""
 var typeFunc func(int) []User
 var config Config
+var EnterList []User
 
 func init() {
 	config = GetConfig()
@@ -36,6 +43,7 @@ func init() {
 	for _, v := range config.Qs {
 		values.Add(v.Key, v.Val)
 	}
+	EnterList = []User{}
 	fetchUrl = config.Url + values.Encode()
 	//functype
 	switch config.WriteType {
@@ -55,6 +63,35 @@ func main() {
 	page := getLastPage()
 	fmt.Printf("url:%v\npage:%v\n", fetchUrl, page)
 	typeFunc(page)
+}
+
+//concurrency
+func fetchDetailWorker(num int) []User {
+	workerNum := 4
+	var wg sync.WaitGroup
+	q := make(chan int, 6)
+	users := []User{}
+	for i := 0; i < workerNum; i++ {
+		wg.Add(1)
+		go users.fetchDetail(&wg, q)
+	}
+	for i := 1; i <= num; i++ {
+		q <- i
+	}
+	close(q)
+	wg.Wait()
+	return users
+}
+
+func (users []User) fetchDetail(wg *sync.WaitGroup, page int) {
+	defer wg.Done()
+	for {
+		s, ok := <-q
+		if !ok {
+			return
+		}
+		users = append(users, fetchDetailBody(s)...)
+	}
 }
 
 //メソッド一覧
@@ -79,22 +116,27 @@ func light(page int) []User {
 }
 
 func printData(page int) []User {
-	var users []User
 	//スクレイピング
-	for i := 1; i <= page; i++ {
-		users = append(users, fetchDetailBody(i)...)
-	}
+	users := fetchDetailWorker(page)
 	scienceNum := 0
 	dojo := 0
+	ge := 0
 	for _, v := range users {
 		if v.Science {
 			scienceNum++
 		}
-		if strings.Index(v.Univ, "女") != -1 {
+		if strings.Index(v.Department, "女") != -1 {
+			fmt.Println(v)
 			dojo++
 		}
+		if strings.Index(v.Eval, "GE") != -1 {
+			ge++
+		}
 	}
-	fmt.Printf("登録者数:%d人\n理系:%d人\n同女:%d人", len(users), scienceNum, dojo)
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"全体登録者数", "理系登録者数", "同女数", "GE数"})
+	table.Append([]string{strconv.Itoa(len(users)), strconv.Itoa(scienceNum), strconv.Itoa(dojo), strconv.Itoa(ge)})
+	table.Render()
 	return users
 }
 
