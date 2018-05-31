@@ -11,6 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/olekukonko/tablewriter"
+	"github.com/ryomak/fetch-encourage-DB/spread_sheet"
 )
 
 type User struct {
@@ -28,7 +29,6 @@ type User struct {
 	Science    bool
 	Update     string
 }
-type us []User
 
 //global変数
 var fetchUrl = ""
@@ -45,7 +45,7 @@ func init() {
 	}
 	EnterList = []User{}
 	fetchUrl = config.Url + values.Encode()
-	//functype
+	//func type
 	switch config.WriteType {
 	case "light":
 		typeFunc = light
@@ -53,6 +53,8 @@ func init() {
 		typeFunc = detail
 	case "printData":
 		typeFunc = printData
+	case "updateSpreadSheet":
+		typeFunc = updateSpreadSheet
 	default:
 		fmt.Println("関数が存在しません")
 	}
@@ -65,52 +67,70 @@ func main() {
 	typeFunc(page)
 }
 
-//concurrency
+//concurrency-worker
 func fetchDetailWorker(num int) []User {
 	workerNum := 4
 	var wg sync.WaitGroup
 	q := make(chan int, 6)
-	users := []User{}
 	for i := 0; i < workerNum; i++ {
 		wg.Add(1)
-		go users.fetchDetail(&wg, q)
+		go fetchDetail(&wg, q)
 	}
 	for i := 1; i <= num; i++ {
 		q <- i
 	}
 	close(q)
 	wg.Wait()
-	return users
+	return EnterList
 }
 
-func (users []User) fetchDetail(wg *sync.WaitGroup, page int) {
+func fetchWorker(num int) []User {
+	workerNum := 4
+	var wg sync.WaitGroup
+	q := make(chan int, 6)
+	for i := 0; i < workerNum; i++ {
+		wg.Add(1)
+		go fetchNormal(&wg, q)
+	}
+	for i := 1; i <= num; i++ {
+		q <- i
+	}
+	close(q)
+	wg.Wait()
+	return EnterList
+}
+
+func fetchDetail(wg *sync.WaitGroup, page chan int) {
 	defer wg.Done()
 	for {
-		s, ok := <-q
+		s, ok := <- page
 		if !ok {
 			return
 		}
-		users = append(users, fetchDetailBody(s)...)
+		EnterList = append(EnterList, fetchDetailBody(s)...)
 	}
 }
 
-//メソッド一覧
-func detail(page int) []User {
-	var users []User
-	//スクレイピング
-	for i := 1; i <= page; i++ {
-		users = append(users, fetchDetailBody(i)...)
+func fetchNormal(wg *sync.WaitGroup, page chan int) {
+	defer wg.Done()
+	for {
+		s, ok := <- page
+		if !ok {
+			return
+		}
+		EnterList = append(EnterList, fetchBody(s)...)
 	}
+}
+
+//=============================メソッド一覧=================///
+func detail(page int) []User {
+	users := fetchDetailWorker(page)
 	WriteCsv(config.WriteFile, users)
 	return users
 }
 
 func light(page int) []User {
-	var users []User
-	//スクレイピング
-	for i := 1; i <= page; i++ {
-		users = append(users, fetchBody(i)...)
-	}
+	users := fetchWorker(page)
 	WriteCsv(config.WriteFile, users)
 	return users
 }
@@ -126,7 +146,6 @@ func printData(page int) []User {
 			scienceNum++
 		}
 		if strings.Index(v.Department, "女") != -1 {
-			fmt.Println(v)
 			dojo++
 		}
 		if strings.Index(v.Eval, "GE") != -1 {
@@ -140,7 +159,27 @@ func printData(page int) []User {
 	return users
 }
 
-//便利関数
+func updateSpreadSheet(page int)[]User{
+	//スクレイピング
+	users := fetchDetailWorker(page)
+	scienceNum := 0
+	dojo := 0
+	ge := 0
+	for _, v := range users {
+		if v.Science {
+			scienceNum++
+		}
+		if strings.Index(v.Department, "女") != -1 {
+			dojo++
+		}
+		if strings.Index(v.Eval, "GE") != -1 {
+			ge++
+		}
+	}
+	spread_sheet.UpdateSpreadSheet(len(users),scienceNum,dojo,ge)
+	return users
+}
+//=========================便利関数==========================//
 func fetchBody(i int) []User {
 	p := strconv.Itoa(i)
 	resp := Get(fetchUrl + "&page=" + p)
