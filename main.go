@@ -55,6 +55,8 @@ func init() {
 		typeFunc = printData
 	case "updateSpreadSheet":
 		typeFunc = updateSpreadSheet
+	case "notMenter":
+		typeFunc = notMenter
 	default:
 		fmt.Println("関数が存在しません")
 	}
@@ -103,7 +105,7 @@ func fetchWorker(num int) []User {
 func fetchDetail(wg *sync.WaitGroup, page chan int) {
 	defer wg.Done()
 	for {
-		s, ok := <- page
+		s, ok := <-page
 		if !ok {
 			return
 		}
@@ -114,7 +116,7 @@ func fetchDetail(wg *sync.WaitGroup, page chan int) {
 func fetchNormal(wg *sync.WaitGroup, page chan int) {
 	defer wg.Done()
 	for {
-		s, ok := <- page
+		s, ok := <-page
 		if !ok {
 			return
 		}
@@ -133,6 +135,54 @@ func light(page int) []User {
 	users := fetchWorker(page)
 	WriteCsv(config.WriteFile, users)
 	return users
+}
+
+func notMenter(page int) []User {
+	users := fetchWorker(page)
+	fmt.Println("fetch complete")
+	encountered := map[string]bool{}
+	dupEncountered := map[string]bool{}
+	for i := 0; i < len(users); i++ {
+		if !encountered[users[i].Phone] {
+			encountered[users[i].Phone] = true
+		}else{
+			dupEncountered[users[i].Phone] =true
+		}
+	}
+	nEnter := []User{}
+	for _, v := range users {
+		if len([]rune(v.Mentor)) < 1 {
+			nEnter = append(nEnter, v)
+		}
+	}
+
+	res := []User{}
+	for _, v := range nEnter {
+		hasMenter := false
+		if dupEncountered[v.Phone]{
+			for _,s := range users{
+				if s.Phone == v.Phone {
+					if len(s.Mentor) > 4{
+						hasMenter = true
+						fmt.Println(s.Phone)
+					}
+				}
+			}
+		}
+		if !hasMenter{
+			res = append(res,v)
+		}
+	}
+	ans := []User{}
+	en := map[string]bool{}
+	for i := 0; i < len(res); i++ {
+		if !en[res[i].Phone] {
+			en[res[i].Phone] = true
+			ans = append(ans,res[i])
+		}
+	}
+	WriteCsv(config.WriteFile, ans)
+	return nEnter
 }
 
 func printData(page int) []User {
@@ -159,7 +209,7 @@ func printData(page int) []User {
 	return users
 }
 
-func updateSpreadSheet(page int)[]User{
+func updateSpreadSheet(page int) []User {
 	//スクレイピング
 	users := fetchDetailWorker(page)
 	scienceNum := 0
@@ -176,9 +226,10 @@ func updateSpreadSheet(page int)[]User{
 			ge++
 		}
 	}
-	spread_sheet.UpdateSpreadSheet(len(users),scienceNum,dojo,ge)
+	spread_sheet.UpdateSpreadSheet(len(users), scienceNum, dojo, ge)
 	return users
 }
+
 //=========================便利関数==========================//
 func fetchBody(i int) []User {
 	p := strconv.Itoa(i)

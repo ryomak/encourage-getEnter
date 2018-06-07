@@ -4,7 +4,7 @@ Url="https://id.en-courage.com/admin/users/search?"
 Auth="authenticity_token=xzvB/2M/LRSgrBVMg3GPe9UlD17ke9J0CXrySO/7c7o/aKvppZA6RQSg0XuJvZv3yZoyF4OTQins6X2kfq0PDg=="
 
 #WriteType...detail=詳細時間かかる，light=データ少ないが早い,printData=登録数，理系数,同女，GEカズのみだす,updateSpreadSheet=エンターリストのスプレッシートに書き込み
-WriteType="updateSpreadSheet"
+WriteType="notMenter"
 
 #出力ファイル
 WriteFile="./enter.csv"
